@@ -25,6 +25,7 @@ object Sound {
     }
 
     fun play(context: Context, resId: Int) {
+        if (!Settings(context).soundOn) return
         val sp = ensure(context)
         val id = ids[resId] ?: return
         sp.play(id, 0.9f, 0.9f, 1, 0, 1f)

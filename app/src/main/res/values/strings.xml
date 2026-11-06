@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Owe Me</string>
+    <string name="splash_tag">offline ledger · no accounts</string>
 
     <string name="home_kicker">LEDGER</string>
     <string name="home_title">Who owes what</string>

@@ -43,6 +43,9 @@ class MainActivity : Activity(), SensorEventListener {
     private var sensorManager: SensorManager? = null
     private var snack: View? = null
     private var snackRunner: Runnable? = null
+    private lateinit var prefs: Settings
+    private lateinit var background: LiquidBackgroundView
+    private var lastRevision = 0
 
     private val dateFormat = SimpleDateFormat("d MMM · h:mm a", Locale.getDefault())
 
@@ -53,14 +56,27 @@ class MainActivity : Activity(), SensorEventListener {
         store = Store(this)
         root = findViewById(R.id.root)
         host = findViewById(R.id.screenHost)
+        background = findViewById(R.id.liquid)
+        prefs = Settings(this)
+        Money.symbol = prefs.currency
+        background.configure(this, prefs)
         sheetLayer = findViewById(R.id.sheetLayer)
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
         showHome(false)
+        lastRevision = prefs.revision
     }
 
     override fun onResume() {
         super.onResume()
+        val saved = prefs.revision
+        if (saved != lastRevision) {
+            lastRevision = saved
+            Money.symbol = prefs.currency
+            background.configure(this, prefs)
+            Skin.apply(root, prefs)
+            refresh()
+        }
         sensorManager?.let { sm ->
             sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let { sm.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
         }
@@ -96,6 +112,7 @@ class MainActivity : Activity(), SensorEventListener {
         val old = screen
         screen = next
         host.addView(next)
+        Skin.apply(next, prefs)
 
         if (!animate) {
             old?.let { host.removeView(it) }
@@ -162,6 +179,15 @@ class MainActivity : Activity(), SensorEventListener {
 
         bindWeek(view)
         bindActivity(view)
+
+        view.findViewById<View>(R.id.btnSettings).apply {
+            springyPress(0.9f)
+            setOnClickListener {
+                Sound.play(this, R.raw.sfx_tap)
+                startActivity(Intent(this, SettingsActivity::class.java))
+                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            }
+        }
 
         view.findViewById<View>(R.id.fabAdd).apply {
             springyPress(0.95f)
