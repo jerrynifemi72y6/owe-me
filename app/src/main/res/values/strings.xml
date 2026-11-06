@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Owe Me</string>
+
+    <string name="home_kicker">LEDGER</string>
+    <string name="home_title">Who owes what</string>
+    <string name="owed_label">OWED TO YOU</string>
+    <string name="owe_label">YOU OWE</string>
+    <string name="people_label">PEOPLE</string>
+    <string name="empty_people">Nobody on the list yet.\nTap + to log the first one.</string>
+
+    <string name="person_history">HISTORY</string>
+    <string name="settle_up">Settle up</string>
+    <string name="back">Back</string>
+
+    <string name="sheet_title">New entry</string>
+    <string name="who">WHO</string>
+    <string name="how_much">HOW MUCH</string>
+    <string name="note_label">NOTE (OPTIONAL)</string>
+    <string name="they_owe">They owe me</string>
+    <string name="i_owe">I owe them</string>
+    <string name="save_entry">Save entry</string>
+    <string name="cancel">Cancel</string>
+    <string name="undo">UNDO</string>
+
+    <string name="settled_msg">Settled with %1$s</string>
+    <string name="deleted_msg">Entry removed</string>
+    <string name="err_person">Add a name first</string>
+    <string name="err_amount">Enter an amount</string>
+    <string name="entries_count">%1$d entries</string>
+    <string name="one_entry">1 entry</string>
+    <string name="person_caption">%1$s across %2$d</string>
+    <string name="owes_you">Owes you</string>
+    <string name="you_owe_them">You owe them</string>
+    <string name="all_square">All square</string>
+    <string name="amount_hint">0</string>
+    <string name="name_hint">Name</string>
+</resources>
