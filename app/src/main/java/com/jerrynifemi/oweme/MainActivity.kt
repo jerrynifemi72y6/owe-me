@@ -183,8 +183,8 @@ class MainActivity : Activity(), SensorEventListener {
         view.findViewById<View>(R.id.btnSettings).apply {
             springyPress(0.9f)
             setOnClickListener {
-                Sound.play(this, R.raw.sfx_tap)
-                startActivity(Intent(this, SettingsActivity::class.java))
+                Sound.play(this@MainActivity, R.raw.sfx_tap)
+                startActivity(Intent(this@MainActivity, SettingsActivity::class.java))
                 overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
             }
         }
