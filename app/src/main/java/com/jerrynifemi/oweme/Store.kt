@@ -58,6 +58,10 @@ class Store(context: Context) {
             .filter { it.balanceMinor != 0L }
             .sortedByDescending { Math.abs(it.balanceMinor) }
 
+    /** Newest first, for the activity feed. */
+    fun recent(limit: Int): List<Entry> =
+        all().sortedByDescending { it.timestamp }.take(limit)
+
     fun nextId(): String = UUID.randomUUID().toString()
 
     companion object {

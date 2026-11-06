@@ -35,4 +35,14 @@
     <string name="all_square">All square</string>
     <string name="amount_hint">0</string>
     <string name="name_hint">Name</string>
+    <string name="net_label">NET</string>
+    <string name="net_ahead">in your favour</string>
+    <string name="net_behind">you are behind</string>
+    <string name="net_even">all square</string>
+    <string name="last_7_days">LAST 7 DAYS</string>
+    <string name="week_total">%1$s moved this week</string>
+    <string name="recent_activity">RECENT ACTIVITY</string>
+    <string name="no_activity">Nothing logged yet. Your entries will show here.</string>
+    <string name="add_entry">Add entry</string>
+    <string name="group_tag">GROUP</string>
 </resources>

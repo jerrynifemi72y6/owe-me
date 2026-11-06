@@ -18,7 +18,7 @@
             android:paddingLeft="20dp"
             android:paddingTop="38dp"
             android:paddingRight="20dp"
-            android:paddingBottom="110dp">
+            android:paddingBottom="120dp">
 
             <TextView
                 style="@style/Kicker"
@@ -40,7 +40,7 @@
                 android:id="@+id/heroPanel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="26dp">
+                android:layout_marginTop="24dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -61,18 +61,34 @@
                         android:layout_marginTop="4dp"
                         android:fontFamily="sans-serif-light"
                         android:textColor="@color/teal"
-                        android:textSize="40sp" />
+                        android:textSize="34sp" />
+
+                    <TextView
+                        style="@style/Kicker"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="@string/owe_label" />
+
+                    <TextView
+                        android:id="@+id/tvIOwe"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="sans-serif-light"
+                        android:textColor="@color/rose"
+                        android:textSize="26sp" />
 
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:layout_marginTop="16dp"
-                        android:layout_marginBottom="14dp"
+                        android:layout_marginTop="18dp"
                         android:background="#26FFFFFF" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
@@ -81,16 +97,24 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="@string/owe_label" />
+                            android:text="@string/net_label" />
 
                         <TextView
-                            android:id="@+id/tvIOwe"
+                            android:id="@+id/tvNet"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:fontFamily="sans-serif-medium"
-                            android:textColor="@color/rose"
+                            android:textColor="@color/text_primary"
                             android:textSize="20sp" />
                     </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvNetCaption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:textColor="@color/text_muted"
+                        android:textSize="13sp" />
                 </LinearLayout>
             </com.jerrynifemi.oweme.GlassPanel>
 
@@ -98,48 +122,103 @@
                 style="@style/Kicker"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="30dp"
+                android:layout_marginTop="28dp"
                 android:text="@string/people_label" />
 
             <TextView
                 android:id="@+id/tvEmpty"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:lineSpacingExtra="6dp"
+                android:layout_marginTop="12dp"
+                android:lineSpacingExtra="4dp"
                 android:text="@string/empty_people"
                 android:textColor="@color/text_muted"
-                android:textSize="14sp"
-                android:visibility="gone" />
+                android:textSize="14sp" />
 
             <LinearLayout
                 android:id="@+id/listPeople"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical" />
+
+            <TextView
+                style="@style/Kicker"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="26dp"
+                android:text="@string/last_7_days" />
+
+            <com.jerrynifemi.oweme.GlassPanel
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingLeft="16dp"
+                    android:paddingTop="16dp"
+                    android:paddingRight="16dp"
+                    android:paddingBottom="14dp">
+
+                    <com.jerrynifemi.oweme.WeekChartView
+                        android:id="@+id/weekChart"
+                        android:layout_width="match_parent"
+                        android:layout_height="108dp" />
+
+                    <TextView
+                        android:id="@+id/tvWeekTotal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:textColor="@color/text_muted"
+                        android:textSize="13sp" />
+                </LinearLayout>
+            </com.jerrynifemi.oweme.GlassPanel>
+
+            <TextView
+                style="@style/Kicker"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="26dp"
+                android:text="@string/recent_activity" />
+
+            <TextView
+                android:id="@+id/tvNoActivity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/no_activity"
+                android:textColor="@color/text_muted"
+                android:textSize="14sp" />
+
+            <LinearLayout
+                android:id="@+id/listActivity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
                 android:orientation="vertical" />
         </LinearLayout>
     </ScrollView>
 
-    <FrameLayout
-        android:id="@+id/fab"
-        android:layout_width="62dp"
-        android:layout_height="62dp"
+    <TextView
+        android:id="@+id/fabAdd"
+        android:layout_width="wrap_content"
+        android:layout_height="54dp"
         android:layout_gravity="bottom|end"
-        android:layout_marginRight="22dp"
-        android:layout_marginBottom="26dp"
-        android:background="@drawable/bg_fab"
+        android:layout_marginRight="20dp"
+        android:layout_marginBottom="22dp"
+        android:background="@drawable/bg_primary"
         android:clickable="true"
         android:focusable="true"
-        android:elevation="8dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:fontFamily="sans-serif-light"
-            android:text="+"
-            android:textColor="#FFFFFF"
-            android:textSize="32sp" />
-    </FrameLayout>
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center"
+        android:letterSpacing="0.03"
+        android:paddingLeft="22dp"
+        android:paddingRight="22dp"
+        android:text="@string/add_entry"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp" />
 </FrameLayout>

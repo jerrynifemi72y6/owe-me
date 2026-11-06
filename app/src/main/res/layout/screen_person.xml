@@ -37,11 +37,17 @@
                     android:textColor="@color/text_primary"
                     android:textSize="24sp" />
 
+                <com.jerrynifemi.oweme.AvatarView
+                    android:id="@+id/avatarPerson"
+                    android:layout_width="46dp"
+                    android:layout_height="46dp"
+                    android:layout_marginLeft="14dp" />
+
                 <TextView
                     android:id="@+id/tvPersonName"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginLeft="16dp"
+                    android:layout_marginLeft="12dp"
                     android:layout_weight="1"
                     android:ellipsize="end"
                     android:fontFamily="sans-serif-light"

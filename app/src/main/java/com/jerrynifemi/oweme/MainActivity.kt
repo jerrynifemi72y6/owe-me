@@ -16,6 +16,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import com.jerrynifemi.oweme.Motion.countUp
@@ -121,12 +122,22 @@ class MainActivity : Activity(), SensorEventListener {
         val people = store.people()
         val owed = people.filter { it.balanceMinor > 0 }.sumOf { it.balanceMinor }
         val iOwe = people.filter { it.balanceMinor < 0 }.sumOf { -it.balanceMinor }
+        val net = owed - iOwe
 
         val tvOwed = view.findViewById<TextView>(R.id.tvOwed)
         val tvIOwe = view.findViewById<TextView>(R.id.tvIOwe)
         tvIOwe.text = Money.full(iOwe)
         tvOwed.text = Money.full(0)
         tvOwed.countUp(0, owed, 900L) { tvOwed.text = Money.full(it) }
+
+        val tvNet = view.findViewById<TextView>(R.id.tvNet)
+        tvNet.text = Money.full(net, withSign = true)
+        tvNet.setTextColor(color(if (net >= 0) R.color.teal else R.color.rose))
+        view.findViewById<TextView>(R.id.tvNetCaption).text = when {
+            net > 0 -> getString(R.string.net_ahead)
+            net < 0 -> getString(R.string.net_behind)
+            else -> getString(R.string.net_even)
+        }
 
         val hero = view.findViewById<GlassPanel>(R.id.heroPanel)
         hero.living = true
@@ -139,12 +150,17 @@ class MainActivity : Activity(), SensorEventListener {
 
         people.forEachIndexed { index, person ->
             val row = layoutInflater.inflate(R.layout.item_person, list, false)
-            row.findViewById<TextView>(R.id.tvInitials).text = person.initials
+            row.findViewById<AvatarView>(R.id.avatar).apply {
+                initials = person.initials
+                isGroup = person.isGroup
+                accent = Accents.of(person.name)
+            }
             row.findViewById<TextView>(R.id.tvName).text = person.name
-            row.findViewById<TextView>(R.id.tvSub).text = if (person.entries.size == 1)
-                getString(R.string.one_entry)
-            else
-                getString(R.string.entries_count, person.entries.size)
+
+            val count = if (person.entries.size == 1) getString(R.string.one_entry)
+            else getString(R.string.entries_count, person.entries.size)
+            row.findViewById<TextView>(R.id.tvSub).text =
+                if (person.isGroup) getString(R.string.group_tag) + "  ·  " + count else count
 
             val amount = row.findViewById<TextView>(R.id.tvAmount)
             amount.text = Money.full(Math.abs(person.balanceMinor))
@@ -159,8 +175,11 @@ class MainActivity : Activity(), SensorEventListener {
             row.enter(70L + 55L * index, 16f)
         }
 
-        view.findViewById<View>(R.id.fab).apply {
-            springyPress(0.92f)
+        bindWeek(view)
+        bindActivity(view)
+
+        view.findViewById<View>(R.id.fabAdd).apply {
+            springyPress(0.95f)
             setOnClickListener {
                 Sound.play(this@MainActivity, R.raw.sfx_tap)
                 openAddSheet(null)
@@ -170,6 +189,63 @@ class MainActivity : Activity(), SensorEventListener {
         view.findViewById<TextView>(R.id.tvHomeTitle).enter(0L, 10f)
     }
 
+    /** Seven days of movement, so the summary card is not the only thing on the page. */
+    private fun bindWeek(view: View) {
+        val chart = view.findViewById<WeekChartView>(R.id.weekChart)
+        val dayMs = 24L * 60L * 60L * 1000L
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        val todayStart = cal.timeInMillis
+        val entries = store.all()
+        val sums = FloatArray(7)
+        val labels = Array(7) { "" }
+        val dayFormat = SimpleDateFormat("EEEEE", Locale.getDefault())
+        var weekTotal = 0L
+
+        for (i in 0 until 7) {
+            val start = todayStart - (6 - i) * dayMs
+            var sum = 0L
+            for (entry in entries) {
+                if (entry.timestamp >= start && entry.timestamp < start + dayMs) {
+                    sum += Math.abs(entry.signedMinor)
+                }
+            }
+            sums[i] = sum.toFloat()
+            weekTotal += sum
+            labels[i] = dayFormat.format(Date(start))
+        }
+
+        chart.setData(sums, labels)
+        view.findViewById<TextView>(R.id.tvWeekTotal).text =
+            getString(R.string.week_total, Money.full(weekTotal))
+    }
+
+    private fun bindActivity(view: View) {
+        val list = view.findViewById<LinearLayout>(R.id.listActivity)
+        val none = view.findViewById<TextView>(R.id.tvNoActivity)
+        val recent = store.recent(5)
+        none.visibility = if (recent.isEmpty()) View.VISIBLE else View.GONE
+        val dateFormat = SimpleDateFormat("d MMM · h:mm a", Locale.getDefault())
+
+        recent.forEachIndexed { index, entry ->
+            val row = layoutInflater.inflate(R.layout.item_entry, list, false)
+            row.findViewById<TextView>(R.id.tvEntryNote).text =
+                if (entry.note.isBlank()) entry.person else entry.note
+            row.findViewById<TextView>(R.id.tvEntryDate).text =
+                entry.person + " · " + dateFormat.format(Date(entry.timestamp))
+            val amount = row.findViewById<TextView>(R.id.tvEntryAmount)
+            amount.text = Money.full(entry.signedMinor, withSign = true)
+            amount.setTextColor(color(if (entry.signedMinor > 0) R.color.teal else R.color.rose))
+            row.springyPress()
+            row.setOnClickListener { showPerson(entry.person, true) }
+            list.addView(row)
+            row.enter(60L + 45L * index, 12f)
+        }
+    }
+
     // ----------------------------------------------------------------- person
 
     private fun bindPerson(view: View, name: String) {
@@ -177,6 +253,12 @@ class MainActivity : Activity(), SensorEventListener {
         val balance = entries.sumOf { it.signedMinor }
 
         view.findViewById<TextView>(R.id.tvPersonName).text = name
+        val summary = PersonBalance(name, balance, entries)
+        view.findViewById<AvatarView>(R.id.avatarPerson).apply {
+            initials = summary.initials
+            isGroup = summary.isGroup
+            accent = Accents.of(name)
+        }
 
         val hero = view.findViewById<GlassPanel>(R.id.personHero)
         hero.living = true
