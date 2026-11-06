@@ -35,6 +35,13 @@ class GlassPanel @JvmOverloads constructor(
         set(value) { field = value; invalidate() }
 
     /** Slowly drifting specular highlight. Use on hero panels only, it costs a loop. */
+    /** When false the panel is a flat card: no sheen, no moving highlight. */
+    var frosted: Boolean = true
+        set(value) {
+            field = value
+            invalidate()
+        }
+
     var living: Boolean = false
         set(value) {
             field = value
@@ -99,12 +106,12 @@ class GlassPanel @JvmOverloads constructor(
         fillPaint.color = tintColor
         canvas.drawPath(clip, fillPaint)
 
-        sheenShader?.let {
+        if (frosted) sheenShader?.let {
             sheenPaint.shader = it
             canvas.drawPath(clip, sheenPaint)
         }
 
-        specularShader?.let {
+        if (frosted) specularShader?.let {
             val band = (width * 0.55f).coerceAtLeast(1f)
             val travel = width + band
             val x = -band + travel * highlight

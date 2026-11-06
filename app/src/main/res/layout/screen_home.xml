@@ -78,6 +78,13 @@
                     android:orientation="vertical"
                     android:padding="22dp">
 
+                <com.jerrynifemi.oweme.ArcView
+                    android:id="@+id/arc"
+                    android:layout_width="86dp"
+                    android:layout_height="86dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="14dp" />
+
                     <TextView
                         style="@style/Kicker"
                         android:layout_width="wrap_content"

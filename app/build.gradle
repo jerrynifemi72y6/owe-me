@@ -11,8 +11,8 @@ android {
         applicationId "com.jerrynifemi.oweme"
         minSdk 21
         targetSdk 34
-        versionCode 4
-        versionName "3.0"
+        versionCode 5
+        versionName "4.0"
     }
 
     // Same fixed key as the other builds: updates install cleanly over the old one.

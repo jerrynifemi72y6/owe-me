@@ -47,6 +47,8 @@ class MainActivity : Activity(), SensorEventListener {
     private lateinit var background: LiquidBackgroundView
     private var lastRevision = 0
 
+    private val skin: Skin get() = Skin.of(prefs)
+
     private val dateFormat = SimpleDateFormat("d MMM · h:mm a", Locale.getDefault())
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,7 +60,7 @@ class MainActivity : Activity(), SensorEventListener {
         host = findViewById(R.id.screenHost)
         background = findViewById(R.id.liquid)
         prefs = Settings(this)
-        Money.symbol = prefs.currency
+        Money.symbol = prefs.currencySymbol
         background.configure(this, prefs)
         sheetLayer = findViewById(R.id.sheetLayer)
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
@@ -72,9 +74,9 @@ class MainActivity : Activity(), SensorEventListener {
         val saved = prefs.revision
         if (saved != lastRevision) {
             lastRevision = saved
-            Money.symbol = prefs.currency
+            Money.symbol = prefs.currencySymbol
             background.configure(this, prefs)
-            Skin.apply(root, prefs)
+            Skin.of(prefs).applyTo(root)
             refresh()
         }
         sensorManager?.let { sm ->
@@ -112,7 +114,7 @@ class MainActivity : Activity(), SensorEventListener {
         val old = screen
         screen = next
         host.addView(next)
-        Skin.apply(next, prefs)
+        Skin.of(prefs).applyTo(next)
 
         if (!animate) {
             old?.let { host.removeView(it) }
@@ -155,11 +157,18 @@ class MainActivity : Activity(), SensorEventListener {
 
         val tvNet = view.findViewById<TextView>(R.id.tvNet)
         tvNet.text = Money.full(net, withSign = true)
-        tvNet.setTextColor(color(if (net >= 0) R.color.teal else R.color.rose))
+        tvNet.setTextColor(if (net >= 0) skin.good else skin.bad)
         view.findViewById<TextView>(R.id.tvNetCaption).text = when {
             net > 0 -> getString(R.string.net_ahead)
             net < 0 -> getString(R.string.net_behind)
             else -> getString(R.string.net_even)
+        }
+
+        view.findViewById<ArcView>(R.id.arc).apply {
+            owedColor = skin.good
+            oweColor = skin.bad
+            trackColor = if (skin.isLightBg) 0x16000000 else 0x22FFFFFF
+            set(owed, iOwe)
         }
 
         val hero = view.findViewById<GlassPanel>(R.id.heroPanel)
@@ -228,7 +237,7 @@ class MainActivity : Activity(), SensorEventListener {
 
             val amount = row.findViewById<TextView>(R.id.tvAmount)
             amount.text = Money.full(Math.abs(person.balanceMinor))
-            amount.setTextColor(color(if (person.balanceMinor > 0) R.color.teal else R.color.rose))
+            amount.setTextColor(if (person.balanceMinor > 0) skin.good else skin.bad)
 
             row.springyPress()
             row.setOnClickListener {
@@ -288,7 +297,7 @@ class MainActivity : Activity(), SensorEventListener {
                 TimeAgo.format(entry.timestamp)
             val amount = row.findViewById<TextView>(R.id.tvEntryAmount)
             amount.text = Money.full(entry.signedMinor, withSign = true)
-            amount.setTextColor(color(if (entry.signedMinor > 0) R.color.teal else R.color.rose))
+            amount.setTextColor(if (entry.signedMinor > 0) skin.good else skin.bad)
             row.springyPress()
             row.setOnClickListener { showPerson(entry.person, true) }
             list.addView(row)
@@ -317,7 +326,7 @@ class MainActivity : Activity(), SensorEventListener {
 
         val balanceView = view.findViewById<TextView>(R.id.tvPersonBalance)
         balanceView.text = Money.full(Math.abs(balance))
-        balanceView.setTextColor(color(if (balance >= 0) R.color.teal else R.color.rose))
+        balanceView.setTextColor(if (balance >= 0) skin.good else skin.bad)
 
         val state = when {
             balance > 0 -> getString(R.string.owes_you)
@@ -346,7 +355,7 @@ class MainActivity : Activity(), SensorEventListener {
 
             val amount = row.findViewById<TextView>(R.id.tvEntryAmount)
             amount.text = Money.full(entry.signedMinor, withSign = true)
-            amount.setTextColor(color(if (entry.signedMinor > 0) R.color.teal else R.color.rose))
+            amount.setTextColor(if (entry.signedMinor > 0) skin.good else skin.bad)
 
             val payPill = row.findViewById<TextView>(R.id.btnEntryPay)
             if (entry.remainingMinor > 0) {
@@ -390,11 +399,25 @@ class MainActivity : Activity(), SensorEventListener {
         if (affected.isEmpty()) return
         store.remove(affected.map { it.id }.toSet())
         Sound.play(this, R.raw.sfx_settle)
+        confetti()
         showHome(true)
         showSnack(getString(R.string.settled_via, name, method)) {
             store.save(store.all() + affected)
             refresh()
         }
+    }
+
+    /** A short burst of paper when a debt is cleared. */
+    private fun confetti() {
+        val view = ConfettiView(this)
+        root.addView(
+            view,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        )
+        view.post { view.burst(root.width / 2f, root.height * 0.42f, skin.accent) }
     }
 
     private fun removeEntry(entry: Entry) {

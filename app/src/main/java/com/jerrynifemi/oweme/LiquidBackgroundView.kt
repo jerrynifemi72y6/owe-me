@@ -35,6 +35,7 @@ class LiquidBackgroundView @JvmOverloads constructor(
     private var light = false
     private var accent = 0xFF7C4DFF.toInt()
     private var photo: Bitmap? = null
+    private var solid = false
     private val photoRect = RectF()
 
     private val ticker = object : Choreographer.FrameCallback {
@@ -56,10 +57,13 @@ class LiquidBackgroundView @JvmOverloads constructor(
     }
 
     fun configure(context: Context, settings: Settings) {
+        val skin = Skin.of(settings)
         light = settings.isLight
-        accent = Skin.accent(settings)
-        pulse = settings.pulse
-        photo = Backdrop.load(context, settings.backdropUri, Math.max(width, height).coerceAtLeast(1080))
+        accent = skin.accent
+        pulse = skin.pulse
+        solid = !settings.isGlass
+        photo = if (solid) null
+        else Backdrop.load(context, settings.backdrop, Math.max(width, height).coerceAtLeast(1080))
         if (android.os.Build.VERSION.SDK_INT >= 31) {
             setRenderEffect(
                 if (settings.blur <= 0) null
@@ -128,6 +132,8 @@ class LiquidBackgroundView @JvmOverloads constructor(
             basePaint.shader = baseShader
             canvas.drawRect(0f, 0f, w, h, basePaint)
         }
+
+        if (solid) return
 
         for (i in blobShaders.indices) {
             val shader = blobShaders[i] ?: continue
