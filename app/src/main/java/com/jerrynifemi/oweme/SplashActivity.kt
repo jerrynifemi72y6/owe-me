@@ -19,7 +19,7 @@ class SplashActivity : Activity() {
         setContentView(R.layout.activity_splash)
 
         val settings = Settings(this)
-        Money.symbol = settings.currency
+        Money.symbol = settings.currencySymbol
 
         val root = findViewById<View>(R.id.splashRoot)
         val background = findViewById<LiquidBackgroundView>(R.id.splashBg)
@@ -28,7 +28,7 @@ class SplashActivity : Activity() {
         val tag = findViewById<TextView>(R.id.splashTag)
 
         background.configure(this, settings)
-        Skin.apply(root, settings)
+        Skin.of(settings).applyTo(root)
 
         badge.scaleX = 0.55f
         badge.scaleY = 0.55f
