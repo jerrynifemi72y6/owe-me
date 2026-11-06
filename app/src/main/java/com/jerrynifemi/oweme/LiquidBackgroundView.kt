@@ -85,8 +85,8 @@ class LiquidBackgroundView @JvmOverloads constructor(
             val shader = blobShaders[i] ?: return@forEach
             val phase = i * 1.7
             val speed = 0.13 + i * 0.035
-            val cx = w * (0.5 + 0.36 * Math.sin(time * speed + phase))
-            val cy = h * (0.5 + 0.30 * Math.cos(time * speed * 0.85 + phase * 1.6))
+            val cx = w * (0.5f + 0.36f * Math.sin(time * speed + phase).toFloat())
+            val cy = h * (0.5f + 0.30f * Math.cos(time * speed * 0.85 + phase * 1.6).toFloat())
             blobPaint.shader = shader
             canvas.save()
             canvas.translate(cx, cy)
