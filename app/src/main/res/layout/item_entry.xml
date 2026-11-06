@@ -37,6 +37,23 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/btnEntryPay"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:layout_marginLeft="10dp"
+            android:background="@drawable/bg_pay_pill"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:text="@string/pay"
+            android:textColor="@color/teal"
+            android:textSize="11sp"
+            android:visibility="gone" />
+
+        <TextView
             android:id="@+id/tvEntryAmount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

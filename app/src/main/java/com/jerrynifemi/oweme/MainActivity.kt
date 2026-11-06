@@ -6,7 +6,13 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Build
+import android.content.Intent
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import android.net.Uri
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -144,11 +150,43 @@ class MainActivity : Activity(), SensorEventListener {
         tiltPanel = hero
         hero.enter(40L, 14f)
 
-        val list = view.findViewById<LinearLayout>(R.id.listPeople)
-        val empty = view.findViewById<TextView>(R.id.tvEmpty)
-        empty.visibility = if (people.isEmpty()) View.VISIBLE else View.GONE
+        val search = view.findViewById<EditText>(R.id.etSearch)
+        renderPeople(view, people)
+        search.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(editable: Editable?) {
+                renderPeople(view, people, editable?.toString().orEmpty())
+            }
+            override fun beforeTextChanged(x: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun onTextChanged(x: CharSequence?, a: Int, b: Int, c: Int) {}
+        })
 
-        people.forEachIndexed { index, person ->
+        bindWeek(view)
+        bindActivity(view)
+
+        view.findViewById<View>(R.id.fabAdd).apply {
+            springyPress(0.95f)
+            setOnClickListener {
+                Sound.play(this@MainActivity, R.raw.sfx_tap)
+                openAddSheet(null)
+            }
+            enter(120L, 20f)
+        }
+        view.findViewById<TextView>(R.id.tvHomeTitle).enter(0L, 10f)
+    }
+
+    private fun renderPeople(screen: View, people: List<PersonBalance>, query: String = "") {
+        val list = screen.findViewById<LinearLayout>(R.id.listPeople)
+        val empty = screen.findViewById<TextView>(R.id.tvEmpty)
+        list.removeAllViews()
+
+        val filtered = if (query.isBlank()) people
+        else people.filter { it.name.contains(query, ignoreCase = true) }
+
+        empty.text = if (query.isNotBlank()) getString(R.string.no_match)
+        else getString(R.string.empty_people)
+        empty.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+
+        filtered.forEachIndexed { index, person ->
             val row = layoutInflater.inflate(R.layout.item_person, list, false)
             row.findViewById<AvatarView>(R.id.avatar).apply {
                 initials = person.initials
@@ -172,21 +210,8 @@ class MainActivity : Activity(), SensorEventListener {
                 showPerson(person.name, true)
             }
             list.addView(row)
-            row.enter(70L + 55L * index, 16f)
+            if (query.isBlank()) row.enter(70L + 55L * index, 16f)
         }
-
-        bindWeek(view)
-        bindActivity(view)
-
-        view.findViewById<View>(R.id.fabAdd).apply {
-            springyPress(0.95f)
-            setOnClickListener {
-                Sound.play(this@MainActivity, R.raw.sfx_tap)
-                openAddSheet(null)
-            }
-            enter(120L, 20f)
-        }
-        view.findViewById<TextView>(R.id.tvHomeTitle).enter(0L, 10f)
     }
 
     /** Seven days of movement, so the summary card is not the only thing on the page. */
@@ -228,14 +253,13 @@ class MainActivity : Activity(), SensorEventListener {
         val none = view.findViewById<TextView>(R.id.tvNoActivity)
         val recent = store.recent(5)
         none.visibility = if (recent.isEmpty()) View.VISIBLE else View.GONE
-        val dateFormat = SimpleDateFormat("d MMM · h:mm a", Locale.getDefault())
-
         recent.forEachIndexed { index, entry ->
             val row = layoutInflater.inflate(R.layout.item_entry, list, false)
             row.findViewById<TextView>(R.id.tvEntryNote).text =
-                if (entry.note.isBlank()) entry.person else entry.note
+                if (entry.direction > 0) getString(R.string.borrowed, entry.person, Money.full(entry.amountMinor))
+                else getString(R.string.you_borrowed, Money.full(entry.amountMinor), entry.person)
             row.findViewById<TextView>(R.id.tvEntryDate).text =
-                entry.person + " · " + dateFormat.format(Date(entry.timestamp))
+                TimeAgo.format(entry.timestamp)
             val amount = row.findViewById<TextView>(R.id.tvEntryAmount)
             amount.text = Money.full(entry.signedMinor, withSign = true)
             amount.setTextColor(color(if (entry.signedMinor > 0) R.color.teal else R.color.rose))
@@ -286,11 +310,26 @@ class MainActivity : Activity(), SensorEventListener {
                 entry.direction > 0 -> getString(R.string.they_owe)
                 else -> getString(R.string.i_owe)
             }
-            row.findViewById<TextView>(R.id.tvEntryDate).text = dateFormat.format(Date(entry.timestamp))
+
+            val when_ = StringBuilder(TimeAgo.format(entry.timestamp))
+            if (entry.paidMinor > 0) {
+                when_.append("  ·  ").append(getString(R.string.part_paid)).append(" ")
+                    .append(Money.full(entry.paidMinor))
+            }
+            row.findViewById<TextView>(R.id.tvEntryDate).text = when_.toString()
 
             val amount = row.findViewById<TextView>(R.id.tvEntryAmount)
             amount.text = Money.full(entry.signedMinor, withSign = true)
             amount.setTextColor(color(if (entry.signedMinor > 0) R.color.teal else R.color.rose))
+
+            val payPill = row.findViewById<TextView>(R.id.btnEntryPay)
+            if (entry.remainingMinor > 0) {
+                payPill.visibility = View.VISIBLE
+                payPill.springyPress(0.92f)
+                payPill.setOnClickListener { openPaySheet(entry) }
+            } else {
+                payPill.visibility = View.GONE
+            }
 
             row.springyPress()
             row.setOnLongClickListener {
@@ -311,17 +350,22 @@ class MainActivity : Activity(), SensorEventListener {
 
         view.findViewById<TextView>(R.id.btnSettle).apply {
             springyPress(0.97f)
-            setOnClickListener { settle(name) }
+            setOnClickListener { openSettleSheet(name) }
+        }
+
+        view.findViewById<TextView>(R.id.btnRemind).apply {
+            springyPress(0.95f)
+            setOnClickListener { remind(name) }
         }
     }
 
-    private fun settle(name: String) {
+    private fun settle(name: String, method: String) {
         val affected = store.all().filter { it.person.trim() == name }
         if (affected.isEmpty()) return
         store.remove(affected.map { it.id }.toSet())
         Sound.play(this, R.raw.sfx_settle)
         showHome(true)
-        showSnack(getString(R.string.settled_msg, name)) {
+        showSnack(getString(R.string.settled_via, name, method)) {
             store.save(store.all() + affected)
             refresh()
         }
@@ -334,6 +378,138 @@ class MainActivity : Activity(), SensorEventListener {
         showSnack(getString(R.string.deleted_msg)) {
             store.add(entry)
             refresh()
+        }
+    }
+
+    // ------------------------------------------------------------------ sheets
+
+    /** Real backdrop blur on Android 12+, plus a 60% scrim on everything below. */
+    private fun setBackdrop(active: Boolean) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            host.setRenderEffect(
+                if (active) RenderEffect.createBlurEffect(24f, 24f, Shader.TileMode.CLAMP) else null
+            )
+        }
+    }
+
+    private fun revealSheet(scrim: View, panel: View) {
+        (panel as? GlassPanel)?.tintColor = android.graphics.Color.parseColor("#F5181D30")
+        setBackdrop(true)
+        panel.translationY = dp(700).toFloat()
+        panel.post {
+            panel.animate().translationY(0f)
+                .setDuration(560).setInterpolator(Motion.spring(0.74f, 1.5f)).start()
+        }
+        scrim.alpha = 0f
+        scrim.animate().alpha(0.6f).setDuration(240).start()
+    }
+
+    private fun dismissSheet(scrim: View, panel: View, after: (() -> Unit)? = null) {
+        panel.animate()
+            .translationY((panel.height.takeIf { it > 0 } ?: dp(600)).toFloat() + dp(80))
+            .setDuration(280)
+            .setInterpolator(Motion.glide())
+            .withEndAction {
+                sheetLayer.removeAllViews()
+                setBackdrop(false)
+                after?.invoke()
+            }
+            .start()
+        scrim.animate().alpha(0f).setDuration(200).start()
+    }
+
+    // ------------------------------------------------------------- part payment
+
+    private fun openPaySheet(entry: Entry) {
+        if (sheetLayer.childCount > 0) return
+        val sheet = layoutInflater.inflate(R.layout.sheet_pay, sheetLayer, false)
+        sheetLayer.addView(sheet)
+
+        val scrim = sheet.findViewById<View>(R.id.payScrim)
+        val panel = sheet.findViewById<View>(R.id.paySheet)
+        val etPay = sheet.findViewById<EditText>(R.id.etPayAmount)
+
+        sheet.findViewById<TextView>(R.id.tvPayRemaining).text = Money.full(entry.remainingMinor)
+        sheet.findViewById<TextView>(R.id.tvPayCaption).text =
+            getString(R.string.pay_remaining_of, Money.full(entry.amountMinor))
+
+        fun close(after: (() -> Unit)? = null) {
+            hideKeyboard(etPay)
+            dismissSheet(scrim, panel, after)
+        }
+
+        scrim.setOnClickListener { close() }
+        sheet.findViewById<TextView>(R.id.btnPayCancel).setOnClickListener { close() }
+
+        sheet.findViewById<TextView>(R.id.chipHalf).setOnClickListener {
+            val half = entry.remainingMinor / 2
+            etPay.setText(String.format(Locale.US, "%.2f", half / 100.0))
+            etPay.setSelection(etPay.text.length)
+        }
+        sheet.findViewById<TextView>(R.id.chipFull).setOnClickListener {
+            etPay.setText(String.format(Locale.US, "%.2f", entry.remainingMinor / 100.0))
+            etPay.setSelection(etPay.text.length)
+        }
+
+        sheet.findViewById<TextView>(R.id.btnPay).apply {
+            springyPress(0.97f)
+            setOnClickListener {
+                val amount = Money.parse(etPay.text.toString())
+                if (amount == null) {
+                    etPay.shake()
+                    return@setOnClickListener
+                }
+                store.pay(entry.id, amount)
+                Sound.play(this@MainActivity, R.raw.sfx_settle)
+                close { refresh() }
+            }
+        }
+
+        revealSheet(scrim, panel)
+    }
+
+    // ---------------------------------------------------------------- settle
+
+    private fun openSettleSheet(name: String) {
+        if (sheetLayer.childCount > 0) return
+        val sheet = layoutInflater.inflate(R.layout.sheet_settle, sheetLayer, false)
+        sheetLayer.addView(sheet)
+
+        val scrim = sheet.findViewById<View>(R.id.settleScrim)
+        val panel = sheet.findViewById<View>(R.id.settleSheet)
+
+        fun close(after: (() -> Unit)? = null) = dismissSheet(scrim, panel, after)
+
+        scrim.setOnClickListener { close() }
+        sheet.findViewById<TextView>(R.id.btnSettleCancel).setOnClickListener { close() }
+
+        listOf(
+            R.id.methodCash to getString(R.string.method_cash),
+            R.id.methodTransfer to getString(R.string.method_transfer),
+            R.id.methodOpay to getString(R.string.method_opay)
+        ).forEach { (id, label) ->
+            sheet.findViewById<TextView>(id).apply {
+                springyPress(0.97f)
+                setOnClickListener { close { settle(name, label) } }
+            }
+        }
+
+        revealSheet(scrim, panel)
+    }
+
+    // ----------------------------------------------------------------- remind
+
+    private fun remind(name: String) {
+        val balance = store.all().filter { it.person.trim() == name }.sumOf { it.signedMinor }
+        val amount = Money.full(Math.abs(balance))
+        val message = if (balance > 0) "Yo $name, you still have my $amount 😅"
+        else "Hey $name, I still owe you $amount 🙏"
+        Sound.play(this, R.raw.sfx_tap)
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/?text=" + Uri.encode(message))))
+        } catch (e: Exception) {
+            val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, message)
+            startActivity(Intent.createChooser(send, getString(R.string.remind)))
         }
     }
 
@@ -352,6 +528,34 @@ class MainActivity : Activity(), SensorEventListener {
         val etNote = sheet.findViewById<EditText>(R.id.etNote)
 
         if (!prefill.isNullOrBlank()) etPerson.setText(prefill)
+
+        // quick amounts, because most entries are 500 / 1k / 2k / 5k
+        listOf(
+            R.id.chip500 to "500",
+            R.id.chip1k to "1000",
+            R.id.chip2k to "2000",
+            R.id.chip5k to "5000"
+        ).forEach { (id, value) ->
+            sheet.findViewById<TextView>(id).apply {
+                springyPress(0.94f)
+                setOnClickListener {
+                    etAmount.setText(value)
+                    etAmount.setSelection(value.length)
+                    Sound.play(this@MainActivity, R.raw.sfx_tap)
+                }
+            }
+        }
+
+        // the big number reacts to every keystroke
+        etAmount.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(editable: Editable?) {
+                etAmount.animate().scaleX(1.05f).scaleY(1.05f).setDuration(80).withEndAction {
+                    etAmount.animate().scaleX(1f).scaleY(1f).setDuration(160).start()
+                }.start()
+            }
+            override fun beforeTextChanged(x: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun onTextChanged(x: CharSequence?, a: Int, b: Int, c: Int) {}
+        })
 
         // quick-pick chips for people already in the ledger
         val chips = sheet.findViewById<LinearLayout>(R.id.chipRow)
@@ -414,16 +618,7 @@ class MainActivity : Activity(), SensorEventListener {
 
         fun close(after: (() -> Unit)? = null) {
             hideKeyboard(etPerson)
-            panel.animate()
-                .translationY((panel.height.takeIf { it > 0 } ?: dp(600)).toFloat() + dp(60))
-                .setDuration(280)
-                .setInterpolator(Motion.glide())
-                .withEndAction {
-                    sheetLayer.removeAllViews()
-                    after?.invoke()
-                }
-                .start()
-            scrim.animate().alpha(0f).setDuration(200).start()
+            dismissSheet(scrim, panel, after)
         }
 
         scrim.setOnClickListener { close() }
@@ -457,14 +652,7 @@ class MainActivity : Activity(), SensorEventListener {
             }
         }
 
-        panel.translationY = dp(680).toFloat()
-        panel.post {
-            panel.animate().translationY(0f)
-                .setDuration(560).setInterpolator(Motion.spring(0.74f, 1.5f)).start()
-        }
-        scrim.alpha = 0f
-        scrim.animate().alpha(1f).setDuration(260).start()
-        etPerson.post { etPerson.requestFocus() }
+        revealSheet(scrim, panel)
     }
 
     // ---------------------------------------------------------------- snackbar
@@ -514,6 +702,7 @@ class MainActivity : Activity(), SensorEventListener {
     override fun onBackPressed() {
         if (sheetLayer.childCount > 0) {
             sheetLayer.removeAllViews()
+            setBackdrop(false)
             return
         }
         val person = currentPerson

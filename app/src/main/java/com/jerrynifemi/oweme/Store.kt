@@ -22,7 +22,8 @@ class Store(context: Context) {
                     amountMinor = o.optLong("amount"),
                     direction = o.optInt("dir", 1),
                     note = o.optString("note"),
-                    timestamp = o.optLong("ts")
+                    timestamp = o.optLong("ts"),
+                    paidMinor = o.optLong("paid")
                 )
             }
         } catch (e: Exception) {
@@ -38,6 +39,7 @@ class Store(context: Context) {
                     .put("id", e.id)
                     .put("person", e.person)
                     .put("amount", e.amountMinor)
+                    .put("paid", e.paidMinor)
                     .put("dir", e.direction)
                     .put("note", e.note)
                     .put("ts", e.timestamp)
@@ -61,6 +63,16 @@ class Store(context: Context) {
     /** Newest first, for the activity feed. */
     fun recent(limit: Int): List<Entry> =
         all().sortedByDescending { it.timestamp }.take(limit)
+
+    /** Records a payment against one entry, never more than what is still owed. */
+    fun pay(entryId: String, paymentMinor: Long) {
+        val list = all()
+        val updated = list.map { e ->
+            if (e.id != entryId) e
+            else e.copy(paidMinor = (e.paidMinor + paymentMinor).coerceAtMost(e.amountMinor))
+        }
+        save(updated)
+    }
 
     fun nextId(): String = UUID.randomUUID().toString()
 

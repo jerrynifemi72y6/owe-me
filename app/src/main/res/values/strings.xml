@@ -45,4 +45,26 @@
     <string name="no_activity">Nothing logged yet. Your entries will show here.</string>
     <string name="add_entry">Add entry</string>
     <string name="group_tag">GROUP</string>
+
+    <string name="new_entry">New entry</string>
+    <string name="note_hint">e.g. for lunch</string>
+    <string name="quick_amounts">QUICK</string>
+    <string name="pay_title">Mark as paid</string>
+    <string name="pay_remaining_of">remaining of %1$s</string>
+    <string name="pay_half">Half</string>
+    <string name="pay_full">Pay full</string>
+    <string name="mark_paid">Mark paid</string>
+    <string name="pay">PAY</string>
+    <string name="settle_title">Settle up</string>
+    <string name="settle_sub">How did it come in?</string>
+    <string name="method_cash">Cash</string>
+    <string name="method_transfer">Transfer</string>
+    <string name="method_opay">Opay</string>
+    <string name="settled_via">Settled with %1$s via %2$s</string>
+    <string name="remind">Remind</string>
+    <string name="borrowed">%1$s borrowed %2$s</string>
+    <string name="you_borrowed">You borrowed %1$s from %2$s</string>
+    <string name="search_hint">Search people</string>
+    <string name="part_paid">part paid</string>
+    <string name="no_match">No one matches that name.</string>
 </resources>

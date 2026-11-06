@@ -36,6 +36,16 @@
                 android:textColor="@color/text_primary"
                 android:textSize="34sp" />
 
+            <EditText
+                android:id="@+id/etSearch"
+                style="@style/InputSolid"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginTop="18dp"
+                android:hint="@string/search_hint"
+                android:imeOptions="actionSearch"
+                android:inputType="textPersonName" />
+
             <com.jerrynifemi.oweme.GlassPanel
                 android:id="@+id/heroPanel"
                 android:layout_width="match_parent"
